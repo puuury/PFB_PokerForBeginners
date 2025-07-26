@@ -4,8 +4,11 @@
   "description": "A beginner-friendly poker game (Holdem & Omaha) in JavaScript.",
   "main": "app.js",
   "scripts": {
-    "start": "echo 'Open index.html in your browser.'"
+    "start": "serve ."
   },
-  "author": "",
-  "license": "MIT"
-} 
+  "author": "puuury",
+  "license": "MIT",
+  "dependencies": {
+    "serve": "^14.2.3"
+  }
+}

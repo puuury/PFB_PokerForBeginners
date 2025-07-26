@@ -122,7 +122,7 @@ class Game {
         this.communityCards = [];
         this.pot = 0;
         this.currentRound = "preflop";
-        this.currentBet = 0; // Tracks the highest bet in the round
+        this.currentBet = 0;
         this.smallBlind = 10;
         this.bigBlind = 20;
     }
@@ -158,10 +158,8 @@ class Game {
         if (this.players.length < 2) {
             throw new Error("At least two players are required for blinds!");
         }
-        // Small blind from first player
         this.players[0].bet(this.smallBlind);
         this.pot += this.smallBlind;
-        // Big blind from second player
         this.players[1].bet(this.bigBlind);
         this.pot += this.bigBlind;
     }
@@ -204,9 +202,9 @@ class Game {
         } else {
             throw new Error("Invalid round! Choose 'flop', 'turn', or 'river'.");
         }
-        this.currentBet = 0; // Reset bet for new round
+        this.currentBet = 0;
         for (let player of this.players) {
-            player.currentBet = 0; // Reset player bets
+            player.currentBet = 0;
         }
     }
 
@@ -225,13 +223,53 @@ class Game {
     }
 }
 
-// Test the Game class with betting
-const game = new Game("Holdem", 2);
-game.startGame();
-console.log("After starting game:\n", game.toString());
-game.playerAction(game.players[0], "call"); // You calls the big blind
-game.playerAction(game.players[1], "call"); // Opponent 1 calls
-game.playerAction(game.players[2], "raise", 50); // Opponent 2 raises to 50
-console.log("After player actions:\n", game.toString());
-game.dealCommunityCards("flop");
-console.log("After flop:\n", game.toString());
+// UI Interaction
+let game;
+
+function startGame() {
+    const gameType = document.getElementById("gameType").value;
+    const numOpponents = parseInt(document.getElementById("numOpponents").value);
+    game = new Game(gameType, numOpponents);
+    game.startGame();
+    updateGameState();
+    document.querySelector(".game-setup").style.display = "none";
+    document.querySelector(".game-state").style.display = "block";
+}
+
+function playerAction(action, amount) {
+    game.playerAction(game.players[0], action, parseInt(amount));
+    updateGameState();
+}
+
+function promptRaise() {
+    const amount = prompt("Enter raise amount:");
+    if (amount) {
+        playerAction("raise", amount);
+    }
+}
+
+function nextRound() {
+    if (game.currentRound === "preflop") {
+        game.dealCommunityCards("flop");
+    } else if (game.currentRound === "flop") {
+        game.dealCommunityCards("turn");
+    } else if (game.currentRound === "turn") {
+        game.dealCommunityCards("river");
+    }
+    updateGameState();
+}
+
+function updateGameState() {
+    document.getElementById("gameTypeDisplay").textContent = game.gameType;
+    document.getElementById("potDisplay").textContent = game.pot;
+    document.getElementById("communityCardsDisplay").textContent = 
+        game.communityCards.map(card => card.toString()).join(", ");
+    document.getElementById("currentRoundDisplay").textContent = game.currentRound;
+    const playersDisplay = document.getElementById("playersDisplay");
+    playersDisplay.innerHTML = "";
+    for (let player of game.players) {
+        const p = document.createElement("p");
+        p.textContent = player.toString();
+        playersDisplay.appendChild(p);
+    }
+}
