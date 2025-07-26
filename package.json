@@ -1,0 +1,11 @@
+{
+  "name": "pfb_pokerforbeginners",
+  "version": "1.0.0",
+  "description": "A beginner-friendly poker game (Holdem & Omaha) in JavaScript.",
+  "main": "app.js",
+  "scripts": {
+    "start": "echo 'Open index.html in your browser.'"
+  },
+  "author": "",
+  "license": "MIT"
+} 

@@ -1,0 +1,17 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+*.log
+
+# Ignore backup files
+*.bak
+*.tmp
+
+# Ignore OS generated files
+ehthumbs.db
+Icon?
+
+# Ignore VSCode settings
+.vscode/ 
