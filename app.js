@@ -61,6 +61,7 @@ class Player {
         this.chips = chips;
         this.hand = [];
         this.isActive = true;
+        this.currentBet = 0; // Tracks the bet in the current round
     }
 
     // Adds a card to the player's hand
@@ -74,12 +75,21 @@ class Player {
             throw new Error(`${this.name} does not have enough chips to bet ${amount}!`);
         }
         this.chips -= amount;
+        this.currentBet += amount;
         return amount;
     }
 
     // Folds the player out of the current round
     fold() {
         this.isActive = false;
+        this.hand = [];
+        this.currentBet = 0;
+    }
+
+    // Resets player for a new round
+    resetForRound() {
+        this.isActive = true;
+        this.currentBet = 0;
         this.hand = [];
     }
 
@@ -90,7 +100,7 @@ class Player {
 
     // Returns a readable string representation of the player
     toString() {
-        return `${this.name}: ${this.chips} chips, Hand: [${this.hand.map(card => card.toString()).join(", ")}]`;
+        return `${this.name}: ${this.chips} chips, Bet: ${this.currentBet}, Hand: [${this.hand.map(card => card.toString()).join(", ")}]`;
     }
 }
 
@@ -104,7 +114,7 @@ class Game {
             throw new Error("Number of opponents must be between 1 and 7!");
         }
         this.gameType = gameType;
-        this.players = [new Player("You")]; // User
+        this.players = [new Player("You")];
         for (let i = 1; i <= numOpponents; i++) {
             this.players.push(new Player(`Opponent ${i}`));
         }
@@ -112,23 +122,71 @@ class Game {
         this.communityCards = [];
         this.pot = 0;
         this.currentRound = "preflop";
+        this.currentBet = 0; // Tracks the highest bet in the round
+        this.smallBlind = 10;
+        this.bigBlind = 20;
     }
 
-    // Starts the game by shuffling the deck and dealing cards
+    // Starts the game by shuffling the deck, dealing cards, and collecting blinds
     startGame() {
         this.deck.reset();
         this.deck.shuffle();
+        this.pot = 0;
+        this.communityCards = [];
+        this.currentRound = "preflop";
+        this.currentBet = this.bigBlind;
+        for (let player of this.players) {
+            player.resetForRound();
+        }
         this.dealPlayerCards();
+        this.startBlinds();
     }
 
     // Deals cards to players based on game type
     dealPlayerCards() {
         const cardsPerPlayer = this.gameType === "Holdem" ? 2 : 4;
         for (let player of this.players) {
-            player.hand = []; // Clear previous hand
+            player.hand = [];
             for (let i = 0; i < cardsPerPlayer; i++) {
                 player.addCard(this.deck.deal());
             }
+        }
+    }
+
+    // Collects small and big blinds
+    startBlinds() {
+        if (this.players.length < 2) {
+            throw new Error("At least two players are required for blinds!");
+        }
+        // Small blind from first player
+        this.players[0].bet(this.smallBlind);
+        this.pot += this.smallBlind;
+        // Big blind from second player
+        this.players[1].bet(this.bigBlind);
+        this.pot += this.bigBlind;
+    }
+
+    // Handles player actions (call, raise, fold)
+    playerAction(player, action, amount = 0) {
+        if (!player.isActive) {
+            throw new Error(`${player.name} is not active!`);
+        }
+        if (action === "fold") {
+            player.fold();
+        } else if (action === "call") {
+            const callAmount = this.currentBet - player.currentBet;
+            if (callAmount > 0) {
+                this.pot += player.bet(callAmount);
+            }
+        } else if (action === "raise") {
+            if (amount <= this.currentBet) {
+                throw new Error("Raise amount must be higher than current bet!");
+            }
+            const raiseAmount = amount - player.currentBet;
+            this.pot += player.bet(raiseAmount);
+            this.currentBet = amount;
+        } else {
+            throw new Error("Invalid action! Choose 'call', 'raise', or 'fold'.");
         }
     }
 
@@ -146,12 +204,17 @@ class Game {
         } else {
             throw new Error("Invalid round! Choose 'flop', 'turn', or 'river'.");
         }
+        this.currentBet = 0; // Reset bet for new round
+        for (let player of this.players) {
+            player.currentBet = 0; // Reset player bets
+        }
     }
 
     // Returns a readable string representation of the game state
     toString() {
         let result = `Game Type: ${this.gameType}\n`;
         result += `Pot: ${this.pot} chips\n`;
+        result += `Current Bet: ${this.currentBet} chips\n`;
         result += `Community Cards: [${this.communityCards.map(card => card.toString()).join(", ")}]\n`;
         result += `Current Round: ${this.currentRound}\n`;
         result += "Players:\n";
@@ -162,9 +225,13 @@ class Game {
     }
 }
 
-// Test the Game class
+// Test the Game class with betting
 const game = new Game("Holdem", 2);
 game.startGame();
-console.log(game.toString());
+console.log("After starting game:\n", game.toString());
+game.playerAction(game.players[0], "call"); // You calls the big blind
+game.playerAction(game.players[1], "call"); // Opponent 1 calls
+game.playerAction(game.players[2], "raise", 50); // Opponent 2 raises to 50
+console.log("After player actions:\n", game.toString());
 game.dealCommunityCards("flop");
-console.log(game.toString());
+console.log("After flop:\n", game.toString());
