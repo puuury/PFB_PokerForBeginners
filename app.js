@@ -2,10 +2,10 @@
 const SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"];
 const VALUES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
 const SUIT_SYMBOLS = {
-    Hearts: "♥",
-    Diamonds: "♦",
-    Clubs: "♣",
-    Spades: "♠"
+    Hearts: "&#9829;", // ♥
+    Diamonds: "&#9830;", // ♦
+    Clubs: "&#9827;", // ♣
+    Spades: "&#9824;" // ♠
 };
 
 // Card class
@@ -15,7 +15,6 @@ class Card {
         this.value = value;
     }
 
-    // Returns a readable string representation of the card with Unicode suit symbols
     toString() {
         return `${this.value}${SUIT_SYMBOLS[this.suit]}`;
     }
@@ -344,7 +343,7 @@ function updateGameState() {
     game.communityCards.forEach(card => {
         const cardDiv = document.createElement("div");
         cardDiv.className = `card ${card.suit.toLowerCase()}`;
-        cardDiv.textContent = card.toString(); // Now uses Unicode symbols
+        cardDiv.innerHTML = card.toString(); // Use innerHTML to render HTML entities
         communityCardsDisplay.appendChild(cardDiv);
     });
     document.getElementById("currentRoundDisplay").textContent = game.currentRound;
@@ -357,7 +356,7 @@ function updateGameState() {
         player.hand.forEach(card => {
             const cardDiv = document.createElement("div");
             cardDiv.className = `card ${card.suit.toLowerCase()}`;
-            cardDiv.textContent = card.toString(); // Now uses Unicode symbols
+            cardDiv.innerHTML = card.toString(); // Use innerHTML to render HTML entities
             handDiv.appendChild(cardDiv);
         });
         playerDiv.appendChild(handDiv);
