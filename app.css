@@ -42,3 +42,24 @@ button:hover {
 .game-state p {
     margin: 10px 0;
 }
+
+.card {
+    display: inline-block;
+    width: 80px;
+    height: 120px;
+    border: 1px solid #000;
+    border-radius: 8px;
+    margin: 5px;
+    text-align: center;
+    line-height: 120px;
+    font-size: 18px;
+    background-color: white;
+}
+
+.card.hearts, .card.diamonds {
+    color: red;
+}
+
+.card.clubs, .card.spades {
+    color: black;
+}

@@ -61,15 +61,13 @@ class Player {
         this.chips = chips;
         this.hand = [];
         this.isActive = true;
-        this.currentBet = 0; // Tracks the bet in the current round
+        this.currentBet = 0;
     }
 
-    // Adds a card to the player's hand
     addCard(card) {
         this.hand.push(card);
     }
 
-    // Places a bet, reducing chips
     bet(amount) {
         if (amount > this.chips) {
             throw new Error(`${this.name} does not have enough chips to bet ${amount}!`);
@@ -79,26 +77,22 @@ class Player {
         return amount;
     }
 
-    // Folds the player out of the current round
     fold() {
         this.isActive = false;
         this.hand = [];
         this.currentBet = 0;
     }
 
-    // Resets player for a new round
     resetForRound() {
         this.isActive = true;
         this.currentBet = 0;
         this.hand = [];
     }
 
-    // Returns the player's current hand
     getHand() {
         return this.hand;
     }
 
-    // Returns a readable string representation of the player
     toString() {
         return `${this.name}: ${this.chips} chips, Bet: ${this.currentBet}, Hand: [${this.hand.map(card => card.toString()).join(", ")}]`;
     }
@@ -127,7 +121,6 @@ class Game {
         this.bigBlind = 20;
     }
 
-    // Starts the game by shuffling the deck, dealing cards, and collecting blinds
     startGame() {
         this.deck.reset();
         this.deck.shuffle();
@@ -142,7 +135,6 @@ class Game {
         this.startBlinds();
     }
 
-    // Deals cards to players based on game type
     dealPlayerCards() {
         const cardsPerPlayer = this.gameType === "Holdem" ? 2 : 4;
         for (let player of this.players) {
@@ -153,7 +145,6 @@ class Game {
         }
     }
 
-    // Collects small and big blinds
     startBlinds() {
         if (this.players.length < 2) {
             throw new Error("At least two players are required for blinds!");
@@ -164,7 +155,6 @@ class Game {
         this.pot += this.bigBlind;
     }
 
-    // Handles player actions (call, raise, fold)
     playerAction(player, action, amount = 0) {
         if (!player.isActive) {
             throw new Error(`${player.name} is not active!`);
@@ -188,7 +178,6 @@ class Game {
         }
     }
 
-    // Deals community cards for flop, turn, or river
     dealCommunityCards(round) {
         if (round === "flop") {
             this.communityCards = [this.deck.deal(), this.deck.deal(), this.deck.deal()];
@@ -208,7 +197,103 @@ class Game {
         }
     }
 
-    // Returns a readable string representation of the game state
+    // Evaluates a player's hand (includes Pair, Three of a Kind, Flush, Straight, High Card)
+    evaluateHand(player) {
+        const hand = player.getHand().concat(this.communityCards);
+        const values = hand.map(card => card.value);
+        const suits = hand.map(card => card.suit);
+        const valueCounts = {};
+        const suitCounts = {};
+
+        // Count occurrences of each value and suit
+        for (let value of values) {
+            valueCounts[value] = (valueCounts[value] || 0) + 1;
+        }
+        for (let suit of suits) {
+            suitCounts[suit] = (suitCounts[suit] || 0) + 1;
+        }
+
+        // Define value order for comparisons
+        const valueOrder = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
+
+        // Check for Flush (5 cards of the same suit)
+        for (let suit in suitCounts) {
+            if (suitCounts[suit] >= 5) {
+                const flushCards = hand.filter(card => card.suit === suit);
+                const flushValues = flushCards.map(card => card.value).sort((a, b) => valueOrder.indexOf(b) - valueOrder.indexOf(a));
+                return { rank: "Flush", value: flushValues[0] }; // Return highest value in flush
+            }
+        }
+
+        // Check for Straight (5 consecutive values)
+        const uniqueValues = [...new Set(values)].sort((a, b) => valueOrder.indexOf(a) - valueOrder.indexOf(b));
+        for (let i = 0; i <= uniqueValues.length - 5; i++) {
+            const slice = uniqueValues.slice(i, i + 5);
+            if (slice.length === 5) {
+                const indices = slice.map(v => valueOrder.indexOf(v));
+                if (Math.max(...indices) - Math.min(...indices) === 4 && new Set(indices).size === 5) {
+                    return { rank: "Straight", value: slice[slice.length - 1] }; // Return highest value in straight
+                }
+            }
+        }
+        // Special case: Ace-low straight (A, 2, 3, 4, 5)
+        if (uniqueValues.includes("Ace") && uniqueValues.includes("2") && uniqueValues.includes("3") && 
+            uniqueValues.includes("4") && uniqueValues.includes("5")) {
+            return { rank: "Straight", value: "5" };
+        }
+
+        // Check for Three of a Kind
+        for (let value in valueCounts) {
+            if (valueCounts[value] >= 3) {
+                return { rank: "Three of a Kind", value: value };
+            }
+        }
+
+        // Check for Pair
+        for (let value in valueCounts) {
+            if (valueCounts[value] >= 2) {
+                return { rank: "Pair", value: value };
+            }
+        }
+
+        // High Card
+        let highCard = values[0];
+        for (let value of values) {
+            if (valueOrder.indexOf(value) > valueOrder.indexOf(highCard)) {
+                highCard = value;
+            }
+        }
+        return { rank: "High Card", value: highCard };
+    }
+
+    // Determines the winner after the river
+    determineWinner() {
+        if (this.currentRound !== "river") {
+            throw new Error("Winner can only be determined after the river!");
+        }
+        let winner = null;
+        let bestHand = null;
+        const rankOrder = ["High Card", "Pair", "Three of a Kind", "Straight", "Flush"];
+
+        for (let player of this.players) {
+            if (player.isActive) {
+                const handResult = this.evaluateHand(player);
+                if (!bestHand || rankOrder.indexOf(handResult.rank) > rankOrder.indexOf(bestHand.rank)) {
+                    winner = player;
+                    bestHand = handResult;
+                } else if (handResult.rank === bestHand.rank) {
+                    // Compare values if ranks are equal
+                    const valueOrder = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
+                    if (valueOrder.indexOf(handResult.value) > valueOrder.indexOf(bestHand.value)) {
+                        winner = player;
+                        bestHand = handResult;
+                    }
+                }
+            }
+        }
+        return winner ? `${winner.name} wins with ${bestHand.rank} (${bestHand.value})!` : "No winner!";
+    }
+
     toString() {
         let result = `Game Type: ${this.gameType}\n`;
         result += `Pot: ${this.pot} chips\n`;
@@ -255,6 +340,7 @@ function nextRound() {
         game.dealCommunityCards("turn");
     } else if (game.currentRound === "turn") {
         game.dealCommunityCards("river");
+        alert(game.determineWinner()); // Show winner after river
     }
     updateGameState();
 }
@@ -262,14 +348,28 @@ function nextRound() {
 function updateGameState() {
     document.getElementById("gameTypeDisplay").textContent = game.gameType;
     document.getElementById("potDisplay").textContent = game.pot;
-    document.getElementById("communityCardsDisplay").textContent = 
-        game.communityCards.map(card => card.toString()).join(", ");
+    const communityCardsDisplay = document.getElementById("communityCardsDisplay");
+    communityCardsDisplay.innerHTML = "";
+    game.communityCards.forEach(card => {
+        const cardDiv = document.createElement("div");
+        cardDiv.className = `card ${card.suit.toLowerCase()}`;
+        cardDiv.textContent = card.toString();
+        communityCardsDisplay.appendChild(cardDiv);
+    });
     document.getElementById("currentRoundDisplay").textContent = game.currentRound;
     const playersDisplay = document.getElementById("playersDisplay");
     playersDisplay.innerHTML = "";
-    for (let player of game.players) {
-        const p = document.createElement("p");
-        p.textContent = player.toString();
-        playersDisplay.appendChild(p);
-    }
+    game.players.forEach(player => {
+        const playerDiv = document.createElement("div");
+        playerDiv.innerHTML = `<strong>${player.name}:</strong> ${player.chips} chips, Bet: ${player.currentBet}<br>`;
+        const handDiv = document.createElement("div");
+        player.hand.forEach(card => {
+            const cardDiv = document.createElement("div");
+            cardDiv.className = `card ${card.suit.toLowerCase()}`;
+            cardDiv.textContent = card.toString();
+            handDiv.appendChild(cardDiv);
+        });
+        playerDiv.appendChild(handDiv);
+        playersDisplay.appendChild(playerDiv);
+    });
 }
