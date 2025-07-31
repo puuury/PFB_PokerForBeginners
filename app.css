@@ -52,8 +52,10 @@ button:hover {
     margin: 5px;
     text-align: center;
     line-height: 120px;
-    font-size: 18px;
+    font-size: 24px; /* Larger font for Unicode symbols */
+    font-family: Arial, sans-serif;
     background-color: white;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Add shadow for better look */
 }
 
 .card.hearts, .card.diamonds {

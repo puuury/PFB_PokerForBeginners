@@ -1,6 +1,12 @@
 // Constants for suits and values
 const SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"];
 const VALUES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
+const SUIT_SYMBOLS = {
+    Hearts: "♥",
+    Diamonds: "♦",
+    Clubs: "♣",
+    Spades: "♠"
+};
 
 // Card class
 class Card {
@@ -9,9 +15,9 @@ class Card {
         this.value = value;
     }
 
-    // Returns a readable string representation of the card
+    // Returns a readable string representation of the card with Unicode suit symbols
     toString() {
-        return `${this.value} of ${this.suit}`;
+        return `${this.value}${SUIT_SYMBOLS[this.suit]}`;
     }
 }
 
@@ -22,7 +28,6 @@ class Deck {
         this.reset();
     }
 
-    // Creates a fresh deck with 52 cards
     reset() {
         this.cards = [];
         for (let suit of SUITS) {
@@ -32,7 +37,6 @@ class Deck {
         }
     }
 
-    // Shuffles the deck using Fisher-Yates algorithm
     shuffle() {
         for (let i = this.cards.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -40,7 +44,6 @@ class Deck {
         }
     }
 
-    // Deals one card from the top of the deck
     deal() {
         if (this.cards.length === 0) {
             throw new Error("No cards left in the deck!");
@@ -48,7 +51,6 @@ class Deck {
         return this.cards.pop();
     }
 
-    // Returns the number of cards left in the deck
     getRemainingCards() {
         return this.cards.length;
     }
@@ -197,7 +199,6 @@ class Game {
         }
     }
 
-    // Evaluates a player's hand (includes Pair, Three of a Kind, Flush, Straight, High Card)
     evaluateHand(player) {
         const hand = player.getHand().concat(this.communityCards);
         const values = hand.map(card => card.value);
@@ -205,7 +206,6 @@ class Game {
         const valueCounts = {};
         const suitCounts = {};
 
-        // Count occurrences of each value and suit
         for (let value of values) {
             valueCounts[value] = (valueCounts[value] || 0) + 1;
         }
@@ -213,50 +213,43 @@ class Game {
             suitCounts[suit] = (suitCounts[suit] || 0) + 1;
         }
 
-        // Define value order for comparisons
         const valueOrder = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
 
-        // Check for Flush (5 cards of the same suit)
         for (let suit in suitCounts) {
             if (suitCounts[suit] >= 5) {
                 const flushCards = hand.filter(card => card.suit === suit);
                 const flushValues = flushCards.map(card => card.value).sort((a, b) => valueOrder.indexOf(b) - valueOrder.indexOf(a));
-                return { rank: "Flush", value: flushValues[0] }; // Return highest value in flush
+                return { rank: "Flush", value: flushValues[0] };
             }
         }
 
-        // Check for Straight (5 consecutive values)
         const uniqueValues = [...new Set(values)].sort((a, b) => valueOrder.indexOf(a) - valueOrder.indexOf(b));
         for (let i = 0; i <= uniqueValues.length - 5; i++) {
             const slice = uniqueValues.slice(i, i + 5);
             if (slice.length === 5) {
                 const indices = slice.map(v => valueOrder.indexOf(v));
                 if (Math.max(...indices) - Math.min(...indices) === 4 && new Set(indices).size === 5) {
-                    return { rank: "Straight", value: slice[slice.length - 1] }; // Return highest value in straight
+                    return { rank: "Straight", value: slice[slice.length - 1] };
                 }
             }
         }
-        // Special case: Ace-low straight (A, 2, 3, 4, 5)
         if (uniqueValues.includes("Ace") && uniqueValues.includes("2") && uniqueValues.includes("3") && 
             uniqueValues.includes("4") && uniqueValues.includes("5")) {
             return { rank: "Straight", value: "5" };
         }
 
-        // Check for Three of a Kind
         for (let value in valueCounts) {
             if (valueCounts[value] >= 3) {
                 return { rank: "Three of a Kind", value: value };
             }
         }
 
-        // Check for Pair
         for (let value in valueCounts) {
             if (valueCounts[value] >= 2) {
                 return { rank: "Pair", value: value };
             }
         }
 
-        // High Card
         let highCard = values[0];
         for (let value of values) {
             if (valueOrder.indexOf(value) > valueOrder.indexOf(highCard)) {
@@ -266,7 +259,6 @@ class Game {
         return { rank: "High Card", value: highCard };
     }
 
-    // Determines the winner after the river
     determineWinner() {
         if (this.currentRound !== "river") {
             throw new Error("Winner can only be determined after the river!");
@@ -282,7 +274,6 @@ class Game {
                     winner = player;
                     bestHand = handResult;
                 } else if (handResult.rank === bestHand.rank) {
-                    // Compare values if ranks are equal
                     const valueOrder = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
                     if (valueOrder.indexOf(handResult.value) > valueOrder.indexOf(bestHand.value)) {
                         winner = player;
@@ -340,7 +331,7 @@ function nextRound() {
         game.dealCommunityCards("turn");
     } else if (game.currentRound === "turn") {
         game.dealCommunityCards("river");
-        alert(game.determineWinner()); // Show winner after river
+        alert(game.determineWinner());
     }
     updateGameState();
 }
@@ -353,7 +344,7 @@ function updateGameState() {
     game.communityCards.forEach(card => {
         const cardDiv = document.createElement("div");
         cardDiv.className = `card ${card.suit.toLowerCase()}`;
-        cardDiv.textContent = card.toString();
+        cardDiv.textContent = card.toString(); // Now uses Unicode symbols
         communityCardsDisplay.appendChild(cardDiv);
     });
     document.getElementById("currentRoundDisplay").textContent = game.currentRound;
@@ -366,7 +357,7 @@ function updateGameState() {
         player.hand.forEach(card => {
             const cardDiv = document.createElement("div");
             cardDiv.className = `card ${card.suit.toLowerCase()}`;
-            cardDiv.textContent = card.toString();
+            cardDiv.textContent = card.toString(); // Now uses Unicode symbols
             handDiv.appendChild(cardDiv);
         });
         playerDiv.appendChild(handDiv);
