@@ -214,6 +214,28 @@ class Game {
 
         const valueOrder = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
 
+        // Check for Four of a Kind
+        for (let value in valueCounts) {
+            if (valueCounts[value] >= 4) {
+                return { rank: "Four of a Kind", value: value };
+            }
+        }
+
+        // Check for Full House
+        let threeOfAKind = null;
+        let pair = null;
+        for (let value in valueCounts) {
+            if (valueCounts[value] >= 3) {
+                threeOfAKind = value;
+            } else if (valueCounts[value] >= 2) {
+                pair = value;
+            }
+        }
+        if (threeOfAKind && pair) {
+            return { rank: "Full House", value: threeOfAKind }; // Use three-of-a-kind value for comparison
+        }
+
+        // Check for Flush
         for (let suit in suitCounts) {
             if (suitCounts[suit] >= 5) {
                 const flushCards = hand.filter(card => card.suit === suit);
@@ -222,6 +244,7 @@ class Game {
             }
         }
 
+        // Check for Straight
         const uniqueValues = [...new Set(values)].sort((a, b) => valueOrder.indexOf(a) - valueOrder.indexOf(b));
         for (let i = 0; i <= uniqueValues.length - 5; i++) {
             const slice = uniqueValues.slice(i, i + 5);
@@ -237,18 +260,21 @@ class Game {
             return { rank: "Straight", value: "5" };
         }
 
+        // Check for Three of a Kind
         for (let value in valueCounts) {
             if (valueCounts[value] >= 3) {
                 return { rank: "Three of a Kind", value: value };
             }
         }
 
+        // Check for Pair
         for (let value in valueCounts) {
             if (valueCounts[value] >= 2) {
                 return { rank: "Pair", value: value };
             }
         }
 
+        // Check for High Card
         let highCard = values[0];
         for (let value of values) {
             if (valueOrder.indexOf(value) > valueOrder.indexOf(highCard)) {
@@ -262,26 +288,44 @@ class Game {
         if (this.currentRound !== "river") {
             throw new Error("Winner can only be determined after the river!");
         }
-        let winner = null;
+        let winners = [];
         let bestHand = null;
-        const rankOrder = ["High Card", "Pair", "Three of a Kind", "Straight", "Flush"];
+        const rankOrder = ["High Card", "Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind"];
+        const valueOrder = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
 
+        // Find all winners with the best hand
         for (let player of this.players) {
             if (player.isActive) {
                 const handResult = this.evaluateHand(player);
                 if (!bestHand || rankOrder.indexOf(handResult.rank) > rankOrder.indexOf(bestHand.rank)) {
-                    winner = player;
+                    winners = [player];
                     bestHand = handResult;
                 } else if (handResult.rank === bestHand.rank) {
-                    const valueOrder = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
                     if (valueOrder.indexOf(handResult.value) > valueOrder.indexOf(bestHand.value)) {
-                        winner = player;
+                        winners = [player];
                         bestHand = handResult;
+                    } else if (valueOrder.indexOf(handResult.value) === valueOrder.indexOf(bestHand.value)) {
+                        winners.push(player); // Add to winners if hand is equal
                     }
                 }
             }
         }
-        return winner ? `${winner.name} wins with ${bestHand.rank} (${bestHand.value})!` : "No winner!";
+
+        // Distribute the pot among winners
+        if (winners.length > 0) {
+            const share = Math.floor(this.pot / winners.length); // Split pot evenly
+            winners.forEach(winner => {
+                winner.chips += share; // Add share to each winner's chips
+            });
+            this.pot = 0; // Reset pot after distribution
+            if (winners.length === 1) {
+                return `${winners[0].name} wins ${share} chips with ${bestHand.rank} (${bestHand.value}${SUIT_SYMBOLS[winners[0].getHand()[0].suit]})!`;
+            } else {
+                const winnerNames = winners.map(w => w.name).join(", ");
+                return `Split Pot! ${winnerNames} each win ${share} chips with ${bestHand.rank} (${bestHand.value}${SUIT_SYMBOLS[winners[0].getHand()[0].suit]})!`;
+            }
+        }
+        return "No winner!";
     }
 
     toString() {
@@ -330,7 +374,7 @@ function nextRound() {
         game.dealCommunityCards("turn");
     } else if (game.currentRound === "turn") {
         game.dealCommunityCards("river");
-        alert(game.determineWinner());
+        document.getElementById("winnerDisplay").innerHTML = game.determineWinner();
     }
     updateGameState();
 }
@@ -343,7 +387,7 @@ function updateGameState() {
     game.communityCards.forEach(card => {
         const cardDiv = document.createElement("div");
         cardDiv.className = `card ${card.suit.toLowerCase()}`;
-        cardDiv.innerHTML = card.toString(); // Use innerHTML to render HTML entities
+        cardDiv.innerHTML = card.toString();
         communityCardsDisplay.appendChild(cardDiv);
     });
     document.getElementById("currentRoundDisplay").textContent = game.currentRound;
@@ -356,10 +400,14 @@ function updateGameState() {
         player.hand.forEach(card => {
             const cardDiv = document.createElement("div");
             cardDiv.className = `card ${card.suit.toLowerCase()}`;
-            cardDiv.innerHTML = card.toString(); // Use innerHTML to render HTML entities
+            cardDiv.innerHTML = card.toString();
             handDiv.appendChild(cardDiv);
         });
         playerDiv.appendChild(handDiv);
         playersDisplay.appendChild(playerDiv);
     });
+    // Clear winner display if not in river
+    if (game.currentRound !== "river") {
+        document.getElementById("winnerDisplay").innerHTML = "";
+    }
 }

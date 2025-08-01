@@ -1,5 +1,5 @@
 body {
-    font-family: Arial, "Noto Sans", sans-serif;
+    font-family: Arial, "Segoe UI Symbol", sans-serif;
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
@@ -53,7 +53,7 @@ button:hover {
     text-align: center;
     line-height: 120px;
     font-size: 24px;
-    font-family: "Noto Sans", Arial, sans-serif; /* Ensure font supports Unicode card symbols */
+    font-family: "Segoe UI Symbol", Arial, sans-serif;
     background-color: white;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
 }
@@ -64,4 +64,12 @@ button:hover {
 
 .card.clubs, .card.spades {
     color: black;
+}
+
+#winnerDisplay {
+    font-size: 18px;
+    font-weight: bold;
+    color: #4CAF50;
+    margin: 10px 0;
+    text-align: center;
 }

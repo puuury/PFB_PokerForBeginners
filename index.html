@@ -9,28 +9,31 @@
 <body>
     <h1>Poker For Beginners</h1>
     <div class="game-setup">
-        <h2>Game Setup</h2>
+        <h2>Setup Game</h2>
         <label for="gameType">Game Type:</label>
         <select id="gameType">
             <option value="Holdem">Texas Hold'em</option>
             <option value="Omaha">Omaha</option>
         </select>
+        <br>
         <label for="numOpponents">Number of Opponents (1-7):</label>
         <input type="number" id="numOpponents" min="1" max="7" value="1">
+        <br>
         <button onclick="startGame()">Start Game</button>
     </div>
     <div class="game-state" style="display: none;">
         <h2>Game State</h2>
         <p><strong>Game Type:</strong> <span id="gameTypeDisplay"></span></p>
-        <p><strong>Pot:</strong> <span id="potDisplay">0</span> chips</p>
-        <p><strong>Community Cards:</strong> <span id="communityCardsDisplay"></span></p>
+        <p><strong>Pot:</strong> <span id="potDisplay"></span> chips</p>
+        <p><strong>Community Cards:</strong></p>
+        <div id="communityCardsDisplay"></div>
         <p><strong>Current Round:</strong> <span id="currentRoundDisplay"></span></p>
-        <h3>Players</h3>
+        <p><strong>Winner:</strong> <span id="winnerDisplay"></span></p> <!-- New div for winner -->
+        <p><strong>Players:</strong></p>
         <div id="playersDisplay"></div>
-        <h3>Your Actions</h3>
-        <button onclick="playerAction('call')">Call</button>
+        <button onclick="playerAction('call', 0)">Call</button>
         <button onclick="promptRaise()">Raise</button>
-        <button onclick="playerAction('fold')">Fold</button>
+        <button onclick="playerAction('fold', 0)">Fold</button>
         <button onclick="nextRound()">Next Round</button>
     </div>
     <script src="app.js"></script>
